@@ -1,6 +1,8 @@
 "use server";
 
 import { AuthError } from "next-auth";
+import { headers } from "next/headers";
+import { hit } from "@/server/rate-limit";
 import { hash } from "bcryptjs";
 import { Prisma } from "@prisma/client";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
@@ -22,7 +24,13 @@ export type AuthFormState = {
  * Create an account. Requires the 18+ confirmation and a US state. New users
  * receive starting demo credits while the site is in demo mode.
  */
+async function ipKey(prefix: string): Promise<string> {
+  const h = await headers();
+  return `${prefix}:${h.get("x-forwarded-for")?.split(",")[0].trim() || h.get("x-real-ip") || "unknown"}`;
+}
+
 export async function signup(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
+  if (!hit(await ipKey("signup"), 10, 3_600_000).ok) return { message: "Too many sign-ups from this network. Try again later." };
   const parsed = signupSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
@@ -86,6 +94,7 @@ export async function signup(_prev: AuthFormState, formData: FormData): Promise<
 }
 
 export async function login(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
+  if (!hit(await ipKey("login"), 20, 15 * 60_000).ok) return { message: "Too many login attempts. Try again in a few minutes." };
   try {
     await signIn("credentials", {
       email: formData.get("email"),

@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 const KEY = "hw.ageConfirmed";
 const EVENT = "hw:age-confirmed";
@@ -30,18 +31,23 @@ function readConfirmed(): boolean {
 export function AgeGate() {
   const confirmed = useSyncExternalStore(subscribe, readConfirmed, () => true);
   if (confirmed) return null;
+  return <AgeGateDialog />;
+}
+
+function AgeGateDialog() {
+  const ref = useFocusTrap<HTMLDivElement>();
   const accept = () => {
     try { localStorage.setItem(KEY, "1"); } catch { /* ignore */ }
     window.dispatchEvent(new Event(EVENT));
   };
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-bg/90 p-4 backdrop-blur-sm">
-      <div role="dialog" aria-modal="true" aria-labelledby="age-title" className="card max-w-md space-y-4 p-6 text-center">
+      <div ref={ref} role="dialog" aria-modal="true" aria-labelledby="age-title" tabIndex={-1} className="card max-w-md space-y-4 p-6 text-center">
         <h2 id="age-title" className="text-2xl font-black">Are you 18 or older?</h2>
         <p className="text-sm text-muted">HonshuWheel offers chance-based prize wheels for adults only. You must be at least 18 and located where this service is permitted.</p>
         <div className="grid grid-cols-2 gap-2">
           <a href="https://www.ncpgambling.org/" className="btn-secondary">No, take me away</a>
-          <button type="button" className="btn-primary" onClick={accept} autoFocus>Yes, I am 18+</button>
+          <button type="button" className="btn-primary" onClick={accept}>Yes, I am 18+</button>
         </div>
         <p className="text-xs text-muted">Play responsibly. Help: 1-800-GAMBLER.</p>
       </div>

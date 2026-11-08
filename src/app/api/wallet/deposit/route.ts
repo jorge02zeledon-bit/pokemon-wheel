@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUserId, requireRealMoney } from "@/server/guards";
 import { createDeposit } from "@/server/wallet/deposits";
+import { rateLimitResponse } from "@/server/rate-limit";
 import { apiError, readJson } from "@/server/api";
 
 const body = z.object({ amountCents: z.number().int() });
@@ -10,6 +11,8 @@ const body = z.object({ amountCents: z.number().int() });
 export async function POST(req: Request) {
   try {
     const userId = await requireUserId();
+    const limited = rateLimitResponse(`deposit:${userId}`, 10, 3_600_000);
+    if (limited) return limited;
     requireRealMoney();
     const { amountCents } = body.parse(await readJson(req));
     const r = await createDeposit(userId, amountCents, new URL("/wallet", req.url).toString());

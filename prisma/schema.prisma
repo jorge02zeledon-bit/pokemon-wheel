@@ -487,3 +487,16 @@ model AdminAuditLog {
   @@index([adminId, createdAt])
   @@index([entityType, entityId])
 }
+
+/// Password reset tokens. Only the SHA-256 hash of the token is stored; the
+/// raw token goes to the user's email once and expires after one hour.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}

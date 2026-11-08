@@ -163,6 +163,11 @@ export function WheelPlay({ wheel, stocked, isDemo, viewer, recentWins }: WheelP
         <RecentWins wheelSlug={wheel.slug} initial={recentWins} pushed={pushed} />
       </aside>
 
+      {/* Screen-reader announcement of the outcome, independent of the animation. */}
+      <p className="sr-only" aria-live="assertive" role="status">
+        {status === "spinning" ? "Spinning…" : result ? `You won ${result.product.name}, ${result.tier.name} tier.` : ""}
+      </p>
+
       {result && <WinReveal result={result} onClose={close} onSpinAgain={close} />}
     </div>
   );

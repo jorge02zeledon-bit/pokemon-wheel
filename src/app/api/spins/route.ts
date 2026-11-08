@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUserId } from "@/server/guards";
 import { executeSpin } from "@/server/engine/spin";
+import { rateLimitResponse } from "@/server/rate-limit";
 import { apiError, readJson } from "@/server/api";
 import { locateRequest } from "@/server/providers/geo";
 
@@ -16,6 +17,8 @@ const bodySchema = z.object({ wheelSlug: z.string().min(1).max(64) });
 export async function POST(req: Request) {
   try {
     const userId = await requireUserId();
+    const limited = rateLimitResponse(`spin:${userId}`, 30, 60_000);
+    if (limited) return limited;
     const { wheelSlug } = bodySchema.parse(await readJson(req));
     // Location from the GeoProvider: stated state AND detected state must both be allowed.
     const geo = await locateRequest(req.headers);

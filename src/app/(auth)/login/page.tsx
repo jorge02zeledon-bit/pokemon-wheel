@@ -14,7 +14,8 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
         <h1 className="text-2xl font-bold">Welcome back</h1>
         <p className="mt-1 text-sm text-muted">Log in to spin, check your vault and manage your account.</p>
         <LoginForm next={next} />
-        <p className="mt-6 text-center text-sm text-muted">
+        <p className="mt-4 text-center text-sm"><Link href="/forgot-password" className="text-muted hover:text-text">Forgot your password?</Link></p>
+        <p className="mt-2 text-center text-sm text-muted">
           New here?{" "}
           <Link href="/signup" className="font-semibold text-accent">
             Create an account

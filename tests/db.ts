@@ -10,7 +10,7 @@ export const testPrisma = new PrismaClient();
 const TABLES = [
   "AdminAuditLog", "LedgerEntry", "VaultItem", "Spin", "Order", "Deposit", "Withdrawal",
   "IdentityVerification", "PlayLimit", "SelfExclusion", "TierProduct", "Tier", "Wheel",
-  "Product", "BlockedState", "Setting", "User",
+  "Product", "BlockedState", "Setting", "PasswordResetToken", "User",
 ];
 
 export async function resetDb() {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import Link from "next/link";
 import Image from "next/image";
 import type { SpinResult } from "@/server/engine/spin";
@@ -15,15 +15,8 @@ const TIER_CONFETTI: Record<string, string[]> = {
 
 /** Modal shown once the wheel has stopped. Confetti for rare and chase wins. */
 export function WinReveal({ result, onClose, onSpinAgain }: { result: SpinResult; onClose: () => void; onSpinAgain: () => void }) {
-  const closeRef = useRef<HTMLButtonElement>(null);
   const confetti = TIER_CONFETTI[result.tier.rarity];
-
-  useEffect(() => {
-    closeRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  const trapRef = useFocusTrap<HTMLDivElement>(onClose);
 
   const big = result.tier.rarity === "CHASE";
   return (
@@ -31,9 +24,12 @@ export function WinReveal({ result, onClose, onSpinAgain }: { result: SpinResult
       {confetti && <Confetti colors={confetti} />}
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg/80 p-4 backdrop-blur-sm" onClick={onClose}>
         <div
+          ref={trapRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby="win-title"
+          aria-describedby="win-desc"
+          tabIndex={-1}
           className="card w-full max-w-md overflow-hidden p-0 text-center"
           style={{ boxShadow: `0 0 80px -20px ${result.tier.color}` }}
           onClick={(e) => e.stopPropagation()}
@@ -59,13 +55,13 @@ export function WinReveal({ result, onClose, onSpinAgain }: { result: SpinResult
               unoptimized
             />
           </div>
-          <p className="px-6 text-sm text-muted">
+          <p id="win-desc" className="px-6 text-sm text-muted">
             It&apos;s in your vault. You have until{" "}
             <span className="text-text">{result.vault.expiresAt ? new Date(result.vault.expiresAt).toLocaleDateString("en-US") : "—"}</span>{" "}
             to ship it or sell it back.
           </p>
           <div className="mt-5 grid grid-cols-2 gap-2 border-t border-border bg-bg/40 p-4">
-            <button ref={closeRef} type="button" className="btn-primary" onClick={onSpinAgain}>
+            <button type="button" className="btn-primary" onClick={onSpinAgain}>
               Spin again
             </button>
             <Link href="/vault" className="btn-secondary">

@@ -10,6 +10,7 @@ import { US_STATES } from "@/lib/us-states";
 import { TierBadge } from "@/components/wheel/TierBadge";
 import { Alert } from "@/components/ui/Alert";
 import { Countdown } from "./Countdown";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 interface Props {
   items: VaultItemView[];
@@ -129,9 +130,10 @@ export function VaultList({ items, isDemo, buybackPercent, shippingFeeCents, def
 }
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  const ref = useFocusTrap<HTMLDivElement>(onClose);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg/80 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div role="dialog" aria-modal="true" aria-label={title} className="card w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+      <div ref={ref} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} className="card w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-lg font-bold">{title}</h3>
         {children}
       </div>

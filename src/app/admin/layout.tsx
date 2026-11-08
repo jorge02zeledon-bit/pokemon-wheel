@@ -13,6 +13,8 @@ const NAV = [
   ["/admin/audit", "Admin audit log"],
 ] as const;
 
+export const metadata = { robots: { index: false, follow: false } };
+
 /** Every admin page re-checks the ADMIN role in the database via this layout. */
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   await requireAdminOrRedirect();
