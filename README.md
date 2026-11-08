@@ -3,7 +3,7 @@
 Spin prize wheels to win sealed trading card products. Next.js (App Router) +
 TypeScript + Tailwind, PostgreSQL via Prisma, Auth.js email/password.
 
-> **Status: Phase 3 of 7 (setup, schema, seed, auth, spin engine, wheel UI).** Not production ready.
+> **Status: Phase 4 of 7 (setup, schema, seed, auth, spin engine, wheel UI, vault).** Not production ready.
 > The site runs in **demo mode** (`REAL_MONEY_ENABLED=false`) and must stay
 > that way until the pre-launch checklist (added in Phase 7) is complete and an
 > attorney has reviewed the legal pages.
@@ -95,7 +95,31 @@ money. While `false`:
 - `/wallet` shows balance, history and the demo refill (available when the
   demo balance is below the refill amount and the cooldown has elapsed).
 
-## API (Phases 2-3)
+## Vault, buyback and shipping (Phase 4)
+
+- Won items land in the vault as `PENDING` with a deadline of
+  `vaultWindowDays`. The user can **sell back** for `buybackPercent` of the
+  win-time value (credited to the balance the item was won with) or **ship**
+  (real-money mode only, real items only; charges `shippingFeeCents` and
+  creates an `Order` for admin fulfilment).
+- When the window closes, `processExpiredVaultItems` applies
+  `vaultDefaultAction`: `AUTO_SELL` or `AUTO_SHIP_HOLD` (item kept with no
+  deadline until an address is added). It runs lazily for a user when they
+  open their vault, and for everyone via the job route below.
+- All decisions lock the vault row, so double clicks and races with the job
+  produce exactly one outcome. See `tests/vault.test.ts`.
+
+### Vault expiry job
+
+```
+GET or POST /api/jobs/vault-expiry
+Authorization: Bearer <JOBS_SECRET>
+```
+
+`vercel.json` schedules it hourly on Vercel Cron; set `CRON_SECRET` and
+`JOBS_SECRET` to the same value there. Any other scheduler works the same way.
+
+## API (Phases 2-4)
 
 | Route | Auth | Purpose |
 | --- | --- | --- |
@@ -106,10 +130,13 @@ money. While `false`:
 | `POST /api/fair/verify` | public | Stateless verifier: recompute any spin from its inputs |
 | `GET /api/wheels/:slug/recent-wins` | public | Latest wins on a wheel, names masked |
 | `GET` / `POST /api/demo/refill` | user | Demo refill status / grant (demo mode only) |
+| `POST /api/vault/:id/sell` | owner | Sell an item back for the configured % |
+| `POST /api/vault/:id/ship` `{address}` | owner | Request shipping (real-money mode only) |
+| `GET`/`POST /api/jobs/vault-expiry` | bearer `JOBS_SECRET` | Apply the default action to expired vault items |
 
 Error codes: `UNAUTHORIZED` 401, `VALIDATION` 400, `INSUFFICIENT_FUNDS` 402,
 `NOT_ELIGIBLE` 403 (with `reason`), `DEMO_MODE` 403, `OUT_OF_STOCK` /
-`WHEEL_UNAVAILABLE` 409.
+`WHEEL_UNAVAILABLE` / `VAULT_ITEM_UNAVAILABLE` 409, `REFILL_NOT_AVAILABLE` 429.
 
 ## Deployment target
 

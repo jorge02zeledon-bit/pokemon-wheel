@@ -1,0 +1,5 @@
+{
+  "crons": [
+    { "path": "/api/jobs/vault-expiry", "schedule": "0 * * * *" }
+  ]
+}

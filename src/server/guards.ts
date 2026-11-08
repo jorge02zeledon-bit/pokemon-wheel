@@ -1,34 +1,14 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "./db";
-import { config } from "./config";
+import { UnauthorizedError, ForbiddenError } from "./errors";
 
 /**
  * Server-side authorization guards. Use these in server components, server
  * actions and route handlers. Never rely on the proxy or the UI alone.
  */
 
-export class UnauthorizedError extends Error {
-  constructor(message = "You must be signed in") {
-    super(message);
-    this.name = "UnauthorizedError";
-  }
-}
-
-export class ForbiddenError extends Error {
-  constructor(message = "You do not have permission to do that") {
-    super(message);
-    this.name = "ForbiddenError";
-  }
-}
-
-/** Thrown by any real-money code path while REAL_MONEY_ENABLED=false. */
-export class RealMoneyDisabledError extends Error {
-  constructor() {
-    super("Real-money features are disabled: the site is in demo mode");
-    this.name = "RealMoneyDisabledError";
-  }
-}
+export { UnauthorizedError, ForbiddenError, RealMoneyDisabledError, requireRealMoney } from "./errors";
 
 /** Returns the session user id or throws. */
 export async function requireUserId(): Promise<string> {
@@ -50,14 +30,6 @@ export async function requireAdmin() {
   const user = await requireUser();
   if (user.role !== "ADMIN") throw new ForbiddenError();
   return user;
-}
-
-/**
- * Hard server-side gate for deposits, withdrawals and shipping.
- * Call at the top of every real-money code path.
- */
-export function requireRealMoney(): void {
-  if (!config.realMoneyEnabled) throw new RealMoneyDisabledError();
 }
 
 /** Page helpers: redirect instead of throwing. */

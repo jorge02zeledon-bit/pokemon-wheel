@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
-import { ForbiddenError, RealMoneyDisabledError, UnauthorizedError } from "./guards";
+import { ForbiddenError, RealMoneyDisabledError, UnauthorizedError } from "./errors";
 import { InsufficientFundsError } from "./wallet/ledger";
 import { NotEligibleError, OutOfStockError, ValidationError, WheelUnavailableError } from "./engine/errors";
 import { RefillNotAvailableError } from "./wallet/demo";
+import { VaultItemUnavailableError } from "./vault/decisions";
 
 /**
  * Maps domain errors to JSON API responses. Unknown errors are logged and
@@ -29,6 +30,7 @@ export function apiError(e: unknown): NextResponse {
   if (e instanceof RefillNotAvailableError) {
     return NextResponse.json({ error: "REFILL_NOT_AVAILABLE", message: e.message, availableAt: e.availableAt }, { status: 429 });
   }
+  if (e instanceof VaultItemUnavailableError) return NextResponse.json({ error: "VAULT_ITEM_UNAVAILABLE", message: e.message }, { status: 409 });
   if (e instanceof WheelUnavailableError) return NextResponse.json({ error: "WHEEL_UNAVAILABLE", message: e.message }, { status: 409 });
   console.error("Unhandled API error", e);
   return NextResponse.json({ error: "INTERNAL", message: "Something went wrong" }, { status: 500 });

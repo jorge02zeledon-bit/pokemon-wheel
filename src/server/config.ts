@@ -17,8 +17,11 @@ export const config = {
    * LAUNCH MODE SWITCH.
    * false => DEMO MODE: free demo credits, no deposits, withdrawals or shipping.
    * Checked on the server by `requireRealMoney()`; the UI only mirrors it.
+   * Read lazily so tests can exercise both modes in one process.
    */
-  realMoneyEnabled: flag("REAL_MONEY_ENABLED", false),
+  get realMoneyEnabled(): boolean {
+    return flag("REAL_MONEY_ENABLED", false);
+  },
 
   paymentProvider: process.env.PAYMENT_PROVIDER ?? "test",
   identityProvider: process.env.IDENTITY_PROVIDER ?? "mock",
@@ -28,7 +31,7 @@ export const config = {
 
   jobsSecret: process.env.JOBS_SECRET ?? "",
   siteName: "HonshuWheel",
-} as const;
+};
 
 /** True while the site is in demo mode (the inverse of realMoneyEnabled). */
 export function isDemoMode(): boolean {
