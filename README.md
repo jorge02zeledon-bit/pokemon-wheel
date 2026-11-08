@@ -237,10 +237,13 @@ signatures in `parseWebhook`, add a `case` to the factory, set the env var.
 
 ## 7. Deploying (Vercel + Neon + Cloudflare R2)
 
-1. **Neon:** create a Postgres project; copy the pooled connection string to
-   `DATABASE_URL` (append `?sslmode=require`). Run
-   `npx prisma migrate deploy` and `npx prisma db seed` against it once (from
-   your machine with that `DATABASE_URL`, plus `ADMIN_EMAIL`/`ADMIN_PASSWORD`).
+1. **Neon:** create a Postgres project. For the app on Vercel use the
+   **pooled** connection string with
+   `?sslmode=require&pgbouncer=true&connection_limit=1` appended as
+   `DATABASE_URL`. For migrations and the seed use the **direct** (non-pooled)
+   string: from your machine run `DATABASE_URL="<direct url>" npx prisma
+   migrate deploy` and `DATABASE_URL="<direct url>" ADMIN_EMAIL=… ADMIN_PASSWORD=…
+   npx prisma db seed` once.
 2. **Cloudflare R2:** create a bucket with public access (or a custom domain);
    create an API token; set `STORAGE_PROVIDER=s3`,
    `S3_ENDPOINT=https://<account>.r2.cloudflarestorage.com`, `S3_BUCKET`,
@@ -253,9 +256,10 @@ signatures in `parseWebhook`, add a `case` to the factory, set the env var.
 5. **Vercel:** import the repo; set all variables above plus `AUTH_SECRET`,
    `AUTH_URL=https://your-domain`, `AUTH_TRUST_HOST=true`,
    `JOBS_SECRET`, and `CRON_SECRET` equal to `JOBS_SECRET` (Vercel sends it as
-   the bearer token for the hourly cron in `vercel.json`). Keep
+   the bearer token for the daily cron in `vercel.json`). Keep
    `REAL_MONEY_ENABLED=false`. Build command is the default (`npm run build`
-   runs `prisma generate`).
+   runs `prisma generate`). Set the production branch to the branch you want
+   deployed (Settings → Git) if it is not `main`.
 6. Point `/api/health` at your uptime monitor.
 7. Confirm each provider's acceptable-use policy permits chance-based
    products before launch.

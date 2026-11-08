@@ -47,3 +47,4 @@ next-env.d.ts
 # uploaded product photos (local storage provider)
 /public/uploads/*
 !/public/uploads/.gitkeep
+.env.production.local
