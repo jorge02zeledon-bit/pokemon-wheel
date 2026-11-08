@@ -112,3 +112,21 @@ export async function removeBlockedStateAction(code: string): Promise<ActionResu
     revalidatePath("/admin/settings");
   });
 }
+
+export async function setIdentityStatusAction(userId: string, status: "APPROVED" | "REJECTED", reason: string): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  const { adminSetIdentityStatus } = await import("@/server/compliance/identity");
+  return run(async () => {
+    await adminSetIdentityStatus(admin.id, userId, status, reason);
+    revalidatePath(`/admin/users/${userId}`);
+  });
+}
+
+export async function finalizeWithdrawalAction(withdrawalId: string, status: "SUCCEEDED" | "FAILED" | "CANCELLED", note: string): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  const { finalizeWithdrawal } = await import("@/server/wallet/withdrawals");
+  return run(async () => {
+    await finalizeWithdrawal(withdrawalId, status, admin.id, note);
+    revalidatePath("/admin/payments");
+  });
+}

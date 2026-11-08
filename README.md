@@ -3,7 +3,7 @@
 Spin prize wheels to win sealed trading card products. Next.js (App Router) +
 TypeScript + Tailwind, PostgreSQL via Prisma, Auth.js email/password.
 
-> **Status: Phase 5 of 7 (setup, schema, seed, auth, spin engine, wheel UI, vault, admin).** Not production ready.
+> **Status: Phase 6 of 7 (setup, schema, seed, auth, spin engine, wheel UI, vault, admin, compliance).** Not production ready.
 > The site runs in **demo mode** (`REAL_MONEY_ENABLED=false`) and must stay
 > that way until the pre-launch checklist (added in Phase 7) is complete and an
 > attorney has reviewed the legal pages.
@@ -74,8 +74,8 @@ money. While `false`:
   standard deviations plus a chi-square test.
 - **Products are global** and shared between wheels with one stock count.
 - **Providers** (payments, identity, geolocation, storage, mail) sit behind
-  interfaces in `src/server/providers/` (added from Phase 4 onward) with safe
-  local defaults. No payment processor is wired.
+  interfaces in `src/server/providers/`, each selected by an env var with a
+  safe local default. No payment processor is wired.
 - **Runtime settings** (RTP range, buyback %, vault window, fees, demo credit
   amounts) live in the `Setting` table with typed defaults in
   `src/server/settings.ts`.
@@ -146,7 +146,43 @@ transaction and writes an `AdminAuditLog` row with before/after snapshots.
   deliberately not editable from the UI.
 - **Admin audit log** viewer.
 
-## API (Phases 2-5)
+## Compliance (Phase 6)
+
+- **Age gate:** first-visit 18+ interstitial (per browser) plus a binding
+  confirmation at signup stored on the account; spins and deposits require it.
+- **Identity verification:** `IdentityProvider` interface with a `mock`
+  implementation (PENDING, auto-approves after `MOCK_IDENTITY_DELAY_SECONDS`,
+  default 10; `MOCK_IDENTITY_OUTCOME=REJECTED` to test rejection). Required
+  before any deposit or withdrawal. Admins can override with a reason. Webhook
+  endpoint `/api/webhooks/identity` for a real vendor (Persona, Veriff, Stripe
+  Identity): implement the interface, verify signatures in `parseWebhook`,
+  register it in `providers/identity/index.ts`.
+- **State restrictions:** both the stated state and the IP-derived state must
+  be allowed, and non-US locations are refused. `GeoProvider` options:
+  `mock` (honours an `x-demo-state` header in demo mode only), `header`
+  (Vercel / Cloudflare edge headers, free), `maxmind` (GeoIP2 web service,
+  fails open to "unknown"; flip `FAIL_CLOSED` if counsel requires). The
+  detected state is recorded on every spin.
+- **Responsible play:** daily/weekly/monthly deposit limits and a daily spend
+  limit (stricter applies immediately, looser after
+  `limitIncreaseCoolingHours`), a session + 24h spend tracker on wheel pages,
+  "take a break" cooldowns (1/3/7 days, cannot be shortened), and
+  self-exclusion (30 days / 6 months / permanent, typed confirmation, only
+  extendable, never reversible by the user). Self-exclusion blocks spins and
+  deposits but leaves the vault and withdrawals available.
+- **Payments:** `PaymentProvider` interface with only a `test` provider
+  (deposits succeed instantly, withdrawals stay pending until an admin marks
+  them paid in `/admin/payments`). Deposits: real-money gate → age → identity
+  → self-exclusion → limits. Withdrawals hold funds immediately and refund on
+  failure. Demo credits are a separate balance and can never be withdrawn.
+- **Email:** `MailProvider` with `console` (default) and `resend` adapters;
+  used for the welcome email and shipped notifications.
+- **Legal pages:** draft Terms, Privacy, Official Rules (renders the live
+  odds, blocked states and vault settings) and Shipping & Buyback Policy, each
+  banner-marked "DRAFT — must be reviewed by an attorney before launch" with
+  bracketed placeholders.
+
+## API (Phases 2-6)
 
 | Route | Auth | Purpose |
 | --- | --- | --- |
@@ -160,11 +196,18 @@ transaction and writes an `AdminAuditLog` row with before/after snapshots.
 | `POST /api/vault/:id/sell` | owner | Sell an item back for the configured % |
 | `POST /api/vault/:id/ship` `{address}` | owner | Request shipping (real-money mode only) |
 | `GET`/`POST /api/jobs/vault-expiry` | bearer `JOBS_SECRET` | Apply the default action to expired vault items |
+| `POST /api/identity/start`, `GET /api/identity/status` | user | Start / poll identity verification |
+| `POST /api/wallet/deposit`, `POST /api/wallet/withdraw` | user, real-money only | Deposits and withdrawals via the PaymentProvider |
+| `GET`/`POST /api/account/limits`, `POST /api/account/break`, `POST /api/account/self-exclude` | user | Responsible play tools |
+| `GET /api/me/activity` | user | Spend tracker (session, 24h, limit) |
+| `POST /api/webhooks/identity`, `POST /api/webhooks/payment` | vendor | Inbound provider callbacks (signature checks live in the provider) |
 | `POST /api/admin/uploads` (multipart) | admin | Upload a product photo |
 | `GET /api/admin/spins.csv` | admin | CSV export of the spin log |
 
 Error codes: `UNAUTHORIZED` 401, `VALIDATION` 400, `INSUFFICIENT_FUNDS` 402,
-`NOT_ELIGIBLE` 403 (with `reason`), `DEMO_MODE` 403, `OUT_OF_STOCK` /
+`NOT_ELIGIBLE` 403 (with `reason`: AGE_NOT_CONFIRMED, NO_STATE, BLOCKED_STATE,
+BLOCKED_IP_STATE, OUTSIDE_US, SELF_EXCLUDED, COOLDOWN, SPEND_LIMIT,
+DEPOSIT_LIMIT, IDENTITY_REQUIRED), `DEMO_MODE` 403, `OUT_OF_STOCK` /
 `WHEEL_UNAVAILABLE` / `VAULT_ITEM_UNAVAILABLE` 409, `REFILL_NOT_AVAILABLE` 429.
 
 ## Deployment target

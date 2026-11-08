@@ -3,6 +3,7 @@ import { OrderStatus } from "@prisma/client";
 import { prisma } from "../db";
 import { ValidationError } from "../engine/errors";
 import { logAdminAction } from "./audit";
+import { sendMailSafe } from "../providers/mail";
 
 export const orderUpdateSchema = z.object({
   status: z.enum(OrderStatus),
@@ -46,6 +47,10 @@ export async function updateOrder(adminId: string, orderId: string, raw: unknown
       await tx.vaultItem.update({ where: { id: before.vaultItem.id }, data: { status: vaultStatus } });
     }
     await logAdminAction(tx, { adminId, action: "order.update", entityType: "Order", entityId: orderId, before: { ...before, vaultItem: undefined }, after });
+    if (d.status === "SHIPPED" && before.status !== "SHIPPED") {
+      const user = await tx.user.findUnique({ where: { id: before.userId }, select: { email: true } });
+      if (user) sendMailSafe({ to: user.email, subject: "Your HonshuWheel prize has shipped", text: `Your order has shipped${d.carrier ? ` via ${d.carrier}` : ""}. Tracking: ${d.trackingNumber}.` });
+    }
     return after;
   });
 }

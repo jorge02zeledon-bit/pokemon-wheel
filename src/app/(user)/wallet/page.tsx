@@ -4,6 +4,7 @@ import { isDemoMode } from "@/server/config";
 import { getDemoRefillStatus } from "@/server/wallet/demo";
 import { formatCents } from "@/lib/money";
 import { RefillButton } from "@/components/wallet/RefillButton";
+import { DepositWithdraw } from "@/components/wallet/DepositWithdraw";
 import { Alert } from "@/components/ui/Alert";
 
 export const metadata = { title: "Wallet" };
@@ -41,11 +42,17 @@ export default async function WalletPage() {
           {demo && refill ? (
             <RefillButton status={{ ...refill, availableAt: refill.availableAt?.toISOString() ?? null }} />
           ) : null}
-          <div className="flex gap-2">
-            <button type="button" className="btn-secondary" disabled title={demo ? "Disabled in demo mode" : undefined}>Deposit</button>
-            <button type="button" className="btn-secondary" disabled title={demo ? "Disabled in demo mode" : undefined}>Withdraw</button>
-          </div>
-          {demo && <Alert kind="warning">Deposits and withdrawals are disabled while the site is in demo mode.</Alert>}
+          {demo ? (
+            <>
+              <div className="flex gap-2">
+                <button type="button" className="btn-secondary" disabled title="Disabled in demo mode">Deposit</button>
+                <button type="button" className="btn-secondary" disabled title="Disabled in demo mode">Withdraw</button>
+              </div>
+              <Alert kind="warning">Deposits and withdrawals are disabled while the site is in demo mode.</Alert>
+            </>
+          ) : (
+            <DepositWithdraw identityApproved={user.identityStatus === "APPROVED"} balanceCents={user.realBalanceCents} />
+          )}
         </div>
       </section>
 

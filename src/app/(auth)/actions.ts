@@ -11,6 +11,7 @@ import { getSettings } from "@/server/settings";
 import { applyLedgerEntry } from "@/server/wallet/ledger";
 import { generateClientSeed, generateServerSeed, hashServerSeed } from "@/server/engine/fair";
 import { signupSchema } from "@/lib/validation/auth";
+import { sendMailSafe } from "@/server/providers/mail";
 
 export type AuthFormState = {
   errors?: Record<string, string[]>;
@@ -75,6 +76,11 @@ export async function signup(_prev: AuthFormState, formData: FormData): Promise<
     throw e;
   }
 
+  sendMailSafe({
+    to: email,
+    subject: "Welcome to HonshuWheel",
+    text: `Hi ${displayName},\n\nYour HonshuWheel account is ready. You must be 18+ to play. Set deposit limits or take a break any time from your account page. If gambling is a problem for you, call or text 1-800-GAMBLER.\n\nHonshuWheel is not affiliated with The Pokémon Company, Nintendo, Creatures, or Game Freak.`,
+  });
   await signIn("credentials", { email, password, redirectTo: "/" });
   return undefined;
 }

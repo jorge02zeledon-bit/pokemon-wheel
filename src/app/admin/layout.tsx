@@ -6,6 +6,7 @@ const NAV = [
   ["/admin/wheels", "Wheels & odds"],
   ["/admin/products", "Products & inventory"],
   ["/admin/orders", "Orders"],
+  ["/admin/payments", "Payments"],
   ["/admin/users", "Users"],
   ["/admin/spins", "Spin audit log"],
   ["/admin/settings", "Settings & blocked states"],

@@ -91,7 +91,7 @@ export async function executeSpin(req: SpinRequest): Promise<SpinResult> {
       }
 
       // 3. Compliance.
-      await assertSpinEligible(tx, user, req.eligibility);
+      await assertSpinEligible(tx, user, { ...req.eligibility, spinPriceCents: wheel.spinPriceCents, isDemo });
 
       // 4. Lock every awardable product (ordered by id to avoid deadlocks) and
       //    require all of them to be in stock, including the chase prize.

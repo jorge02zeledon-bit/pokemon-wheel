@@ -29,7 +29,10 @@ export type IneligibleReason =
   | "BLOCKED_IP_STATE"
   | "SELF_EXCLUDED"
   | "COOLDOWN"
-  | "SPEND_LIMIT";
+  | "SPEND_LIMIT"
+  | "DEPOSIT_LIMIT"
+  | "IDENTITY_REQUIRED"
+  | "OUTSIDE_US";
 
 export class NotEligibleError extends Error {
   constructor(

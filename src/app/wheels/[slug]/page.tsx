@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
+import { locateRequest } from "@/server/providers/geo";
 import { auth } from "@/auth";
 import { prisma } from "@/server/db";
 import { isDemoMode } from "@/server/config";
@@ -29,7 +31,11 @@ export default async function WheelPage({ params }: PageProps<"/wheels/[slug]">)
   if (session?.user?.id) {
     const user = await prisma.user.findUnique({ where: { id: session.user.id } });
     if (user) {
-      const [fair, eligibility] = await Promise.all([getFairState(user.id), previewSpinEligibility(prisma, user)]);
+      const geo = await locateRequest(await headers());
+      const [fair, eligibility] = await Promise.all([
+        getFairState(user.id),
+        previewSpinEligibility(prisma, user, { ipState: geo.stateCode, ipCountry: geo.countryCode, spinPriceCents: wheel.spinPriceCents, isDemo }),
+      ]);
       viewer = {
         balanceCents: isDemo ? user.demoBalanceCents : user.realBalanceCents,
         fair,

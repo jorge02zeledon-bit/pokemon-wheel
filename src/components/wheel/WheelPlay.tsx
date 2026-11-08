@@ -11,6 +11,7 @@ import { WinReveal } from "./WinReveal";
 import { RecentWins } from "./RecentWins";
 import { FairPanel, type FairState } from "./FairPanel";
 import { Alert } from "@/components/ui/Alert";
+import { SessionSpend } from "./SessionSpend";
 
 export interface WheelPlayProps {
   wheel: { slug: string; name: string; spinPriceCents: number; accentColor: string; tiers: WheelTier[] };
@@ -40,6 +41,7 @@ export function WheelPlay({ wheel, stocked, isDemo, viewer, recentWins }: WheelP
   const [result, setResult] = useState<SpinResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pushed, setPushed] = useState<RecentWin | null>(null);
+  const [spinCount, setSpinCount] = useState(0);
 
   const canAfford = balance >= wheel.spinPriceCents;
   const disabledReason = !viewer
@@ -88,6 +90,7 @@ export function WheelPlay({ wheel, stocked, isDemo, viewer, recentWins }: WheelP
         createdAt: new Date(res.createdAt).toISOString(),
       });
       setStatus("revealed");
+      setSpinCount((n) => n + 1);
       router.refresh(); // updates the server-rendered header balance
     } catch (e) {
       await wheelRef.current?.abort();
@@ -135,6 +138,7 @@ export function WheelPlay({ wheel, stocked, isDemo, viewer, recentWins }: WheelP
                   </>
                 )}
               </p>
+              <SessionSpend refreshKey={spinCount} />
               {disabledReason && <Alert kind="warning">{disabledReason}</Alert>}
               {error && <Alert kind="danger">{error}</Alert>}
             </>

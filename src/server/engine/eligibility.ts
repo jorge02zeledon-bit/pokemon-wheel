@@ -2,18 +2,24 @@ import type { User } from "@prisma/client";
 import type { Tx } from "../db";
 import { NotEligibleError } from "./errors";
 import { stateName } from "@/lib/us-states";
+import { assertSpendWithinLimits } from "../compliance/limits";
 
 /**
  * Compliance checks that must pass before a spin is allowed.
  * Called inside the spin transaction with the user's row already locked.
  *
- * Phase 2 covers: age confirmation, stated state, IP-derived state, active
- * self-exclusion and "take a break" cooldown. Phase 6 adds spend limits and
- * wires the IP state from the GeoProvider.
+ * Checks: age confirmation, stated state, IP-derived country and state,
+ * active self-exclusion, "take a break" cooldown and the daily spend limit.
+ * The IP signals come from the GeoProvider (see providers/geo).
  */
 export interface EligibilityContext {
   /** Two-letter US state derived from the request IP, when known. */
   ipState?: string | null;
+  /** ISO country from the request IP, when known. Non-US locations are refused. */
+  ipCountry?: string | null;
+  /** Filled in by the engine: the price about to be charged, for spend limits. */
+  spinPriceCents?: number;
+  isDemo?: boolean;
 }
 
 export async function assertSpinEligible(tx: Tx, user: User, ctx: EligibilityContext = {}): Promise<void> {
@@ -24,6 +30,10 @@ export async function assertSpinEligible(tx: Tx, user: User, ctx: EligibilityCon
   }
   if (!user.stateCode) {
     throw new NotEligibleError("NO_STATE", "Add your state of residence to your account before spinning");
+  }
+
+  if (ctx.ipCountry && ctx.ipCountry !== "US") {
+    throw new NotEligibleError("OUTSIDE_US", "Spinning is only available from within the United States");
   }
 
   const codes = [user.stateCode, ctx.ipState].filter((c): c is string => !!c);
@@ -57,6 +67,10 @@ export async function assertSpinEligible(tx: Tx, user: User, ctx: EligibilityCon
       `You are taking a break until ${user.cooldownUntil.toLocaleString("en-US")}`,
       user.cooldownUntil,
     );
+  }
+
+  if (ctx.spinPriceCents !== undefined && ctx.isDemo !== undefined) {
+    await assertSpendWithinLimits(tx, user.id, ctx.spinPriceCents, ctx.isDemo, now);
   }
 }
 

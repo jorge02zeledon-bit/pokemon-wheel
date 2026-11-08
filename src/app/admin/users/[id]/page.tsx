@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getUserForAdmin } from "@/server/admin/users";
 import { requireAdminOrRedirect } from "@/server/guards";
 import { UserActions } from "@/components/admin/UserActions";
+import { IdentityOverride } from "@/components/admin/IdentityOverride";
 import { formatCents } from "@/lib/money";
 import { stateName } from "@/lib/us-states";
 
@@ -33,6 +34,15 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
             <div className="col-span-2"><dt className="text-muted">Limits</dt><dd className="font-mono text-xs">{u.playLimit ? JSON.stringify({ daily: u.playLimit.dailyDepositCents, weekly: u.playLimit.weeklyDepositCents, monthly: u.playLimit.monthlyDepositCents, dailySpend: u.playLimit.dailySpendCents }) : "none set"}</dd></div>
           </dl>
           <UserActions userId={u.id} role={u.role} isSelf={u.id === admin.id} />
+          <div className="card space-y-3 p-5 text-sm">
+            <h3 className="text-lg font-bold">Identity</h3>
+            <IdentityOverride userId={u.id} status={u.identityStatus} />
+            {u.verifications.length > 0 && (
+              <ul className="text-xs text-muted">
+                {u.verifications.map((v) => <li key={v.id}>{v.createdAt.toLocaleString("en-US")} · {v.provider} · {v.status}{v.reason ? ` · ${v.reason}` : ""}</li>)}
+              </ul>
+            )}
+          </div>
         </div>
         <div className="card p-5 text-sm">
           <h3 className="text-lg font-bold">Recent ledger</h3>
