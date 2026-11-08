@@ -3,7 +3,7 @@
 Spin prize wheels to win sealed trading card products. Next.js (App Router) +
 TypeScript + Tailwind, PostgreSQL via Prisma, Auth.js email/password.
 
-> **Status: Phase 1 of 7 (setup, schema, seed, auth).** Not production ready.
+> **Status: Phase 2 of 7 (setup, schema, seed, auth, spin engine).** Not production ready.
 > The site runs in **demo mode** (`REAL_MONEY_ENABLED=false`) and must stay
 > that way until the pre-launch checklist (added in Phase 7) is complete and an
 > attorney has reviewed the legal pages.
@@ -59,9 +59,19 @@ money. While `false`:
   (10,000 = 100%) and every wheel's tiers must sum to exactly 10,000.
 - **Spin** and **LedgerEntry** tables are append-only: a PostgreSQL trigger in
   the init migration rejects `UPDATE` and `DELETE`.
+- **Spin engine** (`src/server/engine/spin.ts`): one database transaction per
+  spin that locks the user row, validates the wheel, runs compliance checks,
+  locks and checks stock for every awardable product (including the chase),
+  debits the balance, rolls, reserves the unit, writes the immutable spin
+  record with an odds snapshot, creates the vault item and rotates the seed.
+  Any failure rolls everything back.
 - **Provably fair:** per spin, `HMAC-SHA256(serverSeed, clientSeed:nonce)`.
   The server seed's SHA-256 hash is shown before the spin; the seed is revealed
-  after it. See `src/server/engine/fair.ts`.
+  after it. Tier roll = first 32 bits mod 10,000; product roll = next 24 bits.
+  See `src/server/engine/fair.ts` and the pure verifier in `verify.ts`.
+- **Odds test:** `tests/engine/distribution.test.ts` runs 100,000 spins per
+  wheel through the real roll pipeline and checks every tier within 4.5
+  standard deviations plus a chi-square test.
 - **Products are global** and shared between wheels with one stock count.
 - **Providers** (payments, identity, geolocation, storage, mail) sit behind
   interfaces in `src/server/providers/` (added from Phase 4 onward) with safe
@@ -69,6 +79,20 @@ money. While `false`:
 - **Runtime settings** (RTP range, buyback %, vault window, fees, demo credit
   amounts) live in the `Setting` table with typed defaults in
   `src/server/settings.ts`.
+
+## API (Phase 2)
+
+| Route | Auth | Purpose |
+| --- | --- | --- |
+| `POST /api/spins` `{ wheelSlug }` | user | Perform a spin; returns result, revealed seed, next seed hash |
+| `GET /api/spins/:id` | owner/admin | Full fairness record of a spin plus server-side verification |
+| `GET /api/fair/state` | user | Next server seed hash, client seed, next nonce |
+| `POST /api/fair/client-seed` `{ clientSeed }` | user | Change client seed for future spins |
+| `POST /api/fair/verify` | public | Stateless verifier: recompute any spin from its inputs |
+
+Error codes: `UNAUTHORIZED` 401, `VALIDATION` 400, `INSUFFICIENT_FUNDS` 402,
+`NOT_ELIGIBLE` 403 (with `reason`), `DEMO_MODE` 403, `OUT_OF_STOCK` /
+`WHEEL_UNAVAILABLE` 409.
 
 ## Deployment target
 

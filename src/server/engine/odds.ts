@@ -42,7 +42,7 @@ export function selectTier<T extends TierOdds>(tiers: readonly T[], tierRoll: nu
   throw new Error("selectTier: roll exceeded cumulative odds");
 }
 
-/** Pick an index in [0, count) from a 32-bit roll. Uniform for our small counts. */
+/** Pick an index in [0, count) from a 24-bit roll. Uniform for our small counts. */
 export function selectIndex(productRoll: number, count: number): number {
   if (count <= 0) throw new RangeError("count must be positive");
   return productRoll % count;

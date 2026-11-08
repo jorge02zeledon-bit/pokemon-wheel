@@ -36,7 +36,7 @@ describe("odds helpers", () => {
   it("picks product indexes within range", () => {
     expect(selectIndex(0, 3)).toBe(0);
     expect(selectIndex(7, 3)).toBe(1);
-    expect(selectIndex(0xffffffff, 2)).toBe(1);
+    expect(selectIndex(0xffffff, 2)).toBe(1);
     expect(() => selectIndex(1, 0)).toThrow(RangeError);
   });
 });

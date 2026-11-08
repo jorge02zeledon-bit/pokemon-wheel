@@ -25,10 +25,12 @@ describe("provably fair primitives", () => {
   });
 
   it("maps a known hash to known rolls", () => {
-    const hash = "0000270f" + "00000005" + "0".repeat(48); // 9999, 5
+    const hash = "0000270f" + "000005" + "0".repeat(50); // 9999, 5
     expect(rollsFromHash(hash)).toEqual({ resultHash: hash, tierRoll: 9999, productRoll: 5 });
-    const hash2 = "00002710" + "ffffffff" + "0".repeat(48); // 10000 -> wraps to 0
+    const hash2 = "00002710" + "ffffff" + "0".repeat(50); // 10000 -> wraps to 0
     expect(rollsFromHash(hash2).tierRoll).toBe(0);
-    expect(rollsFromHash(hash2).productRoll).toBe(0xffffffff);
+    expect(rollsFromHash(hash2).productRoll).toBe(0xffffff);
+    const hash3 = "ffffffff" + "000000" + "0".repeat(50); // 2^32-1 mod 10000 = 7295
+    expect(rollsFromHash(hash3).tierRoll).toBe(7295);
   });
 });

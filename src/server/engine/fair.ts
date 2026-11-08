@@ -9,8 +9,14 @@ import { BPS_SCALE } from "@/lib/money";
  *      user only `sha256(serverSeed)`.
  *   2. The user controls `clientSeed`; `nonce` increments per user per spin.
  *   3. resultHash = HMAC-SHA256(key = serverSeed, msg = `${clientSeed}:${nonce}`)
- *   4. tierRoll    = first 8 hex chars of resultHash as an integer, mod 10,000
- *      productRoll = next 8 hex chars as an integer (mod product count later)
+ *   4. tierRoll    = first 8 hex chars (32 bits) of resultHash as an integer, mod 10,000
+ *      productRoll = next 6 hex chars (24 bits) as an integer; the product
+ *                    within the winning tier is productRoll mod (product count)
+ *
+ * Bias notes: 2^32 mod 10,000 = 7,296, so tier rolls below 7,296 are favoured
+ * by 1 part in ~429,000 (about 0.0002% of a 1% tier): negligible, and
+ * documented on the Provably Fair page. Product choice uses 24 bits for at
+ * most a handful of products, so its modulo bias is below 1 part in 1,000,000.
  *   5. After the spin the server reveals `serverSeed` and rotates to a new one.
  *
  * Anyone can recompute steps 3-4 from the revealed values and compare them with
@@ -40,14 +46,14 @@ export interface FairRolls {
   resultHash: string;
   /** Integer in [0, 10000) used to select the tier against cumulative odds. */
   tierRoll: number;
-  /** Non-negative 32-bit integer used to pick a product inside the tier. */
+  /** Non-negative 24-bit integer used to pick a product inside the tier. */
   productRoll: number;
 }
 
 /** Derive the two rolls from a result hash. Pure function. */
 export function rollsFromHash(resultHash: string): FairRolls {
   const a = parseInt(resultHash.slice(0, 8), 16); // 32 bits
-  const b = parseInt(resultHash.slice(8, 16), 16); // next 32 bits
+  const b = parseInt(resultHash.slice(8, 14), 16); // next 24 bits
   return { resultHash, tierRoll: a % BPS_SCALE, productRoll: b };
 }
 
