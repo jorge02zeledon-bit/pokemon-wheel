@@ -8,7 +8,8 @@ const NAV = [
   ["/admin/orders", "Orders"],
   ["/admin/users", "Users"],
   ["/admin/spins", "Spin audit log"],
-  ["/admin/settings", "Settings"],
+  ["/admin/settings", "Settings & blocked states"],
+  ["/admin/audit", "Admin audit log"],
 ] as const;
 
 /** Every admin page re-checks the ADMIN role in the database via this layout. */

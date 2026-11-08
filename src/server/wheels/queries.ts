@@ -6,6 +6,7 @@ import { prisma } from "../db";
  */
 export const wheelWithTiers = {
   tiers: {
+    where: { oddsBps: { gt: 0 } }, // retired (0%) tiers are hidden from the public
     orderBy: [{ sortOrder: "asc" as const }, { id: "asc" as const }],
     include: {
       products: {
@@ -45,5 +46,5 @@ export function wheelPrizeRange(wheel: WheelWithTiers) {
 
 /** True when every product the wheel can award has at least one unit in stock. */
 export function wheelFullyStocked(wheel: WheelWithTiers): boolean {
-  return wheel.tiers.every((t) => t.products.length > 0 && t.products.every((tp) => tp.product.stock > 0));
+  return wheel.tiers.every((t) => t.products.length > 0 && t.products.every((tp) => tp.product.stock > 0 && tp.product.isActive));
 }

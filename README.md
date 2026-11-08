@@ -3,7 +3,7 @@
 Spin prize wheels to win sealed trading card products. Next.js (App Router) +
 TypeScript + Tailwind, PostgreSQL via Prisma, Auth.js email/password.
 
-> **Status: Phase 4 of 7 (setup, schema, seed, auth, spin engine, wheel UI, vault).** Not production ready.
+> **Status: Phase 5 of 7 (setup, schema, seed, auth, spin engine, wheel UI, vault, admin).** Not production ready.
 > The site runs in **demo mode** (`REAL_MONEY_ENABLED=false`) and must stay
 > that way until the pre-launch checklist (added in Phase 7) is complete and an
 > attorney has reviewed the legal pages.
@@ -119,7 +119,34 @@ Authorization: Bearer <JOBS_SECRET>
 `vercel.json` schedules it hourly on Vercel Cron; set `CRON_SECRET` and
 `JOBS_SECRET` to the same value there. Any other scheduler works the same way.
 
-## API (Phases 2-4)
+## Admin panel (Phase 5)
+
+`/admin` is role-protected (proxy + database re-check on every page). Every
+mutation goes through `src/server/admin/*`, validates with zod, runs in a
+transaction and writes an `AdminAuditLog` row with before/after snapshots.
+
+- **Wheels & odds:** full editor with a live EV / RTP panel
+  (`src/server/engine/ev.ts`, unit tested). Odds are entered as percentages;
+  a save is refused unless they total exactly 100%. Warnings: RTP outside the
+  configured range, guaranteed-floor violation, out-of-stock or inactive
+  products, empty tiers. Tiers that have been awarded cannot be deleted; set
+  them to 0% to retire them (hidden from the public and never selected).
+- **Products & inventory:** catalogue, stock adjustments with a required
+  reason (never negative), photo upload through the `StorageProvider`
+  (`local` disk in dev, `s3` for S3/R2/MinIO in production; JPEG/PNG/WebP,
+  5 MB, magic bytes checked).
+- **Orders:** status, carrier, tracking and private notes. Marking an order
+  shipped requires a tracking number and updates the vault item.
+- **Users:** search, detail, promote/demote (not yourself), manual balance
+  adjustments with a reason (posted to the ledger).
+- **Spin audit log:** filter by wheel, tier, user; expand to see seeds and
+  hashes; CSV export.
+- **Settings & blocked states:** every runtime setting with validation; add or
+  remove blocked US states with immediate effect. `REAL_MONEY_ENABLED` is
+  deliberately not editable from the UI.
+- **Admin audit log** viewer.
+
+## API (Phases 2-5)
 
 | Route | Auth | Purpose |
 | --- | --- | --- |
@@ -133,6 +160,8 @@ Authorization: Bearer <JOBS_SECRET>
 | `POST /api/vault/:id/sell` | owner | Sell an item back for the configured % |
 | `POST /api/vault/:id/ship` `{address}` | owner | Request shipping (real-money mode only) |
 | `GET`/`POST /api/jobs/vault-expiry` | bearer `JOBS_SECRET` | Apply the default action to expired vault items |
+| `POST /api/admin/uploads` (multipart) | admin | Upload a product photo |
+| `GET /api/admin/spins.csv` | admin | CSV export of the spin log |
 
 Error codes: `UNAUTHORIZED` 401, `VALIDATION` 400, `INSUFFICIENT_FUNDS` 402,
 `NOT_ELIGIBLE` 403 (with `reason`), `DEMO_MODE` 403, `OUT_OF_STOCK` /

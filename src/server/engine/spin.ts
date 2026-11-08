@@ -83,7 +83,10 @@ export async function executeSpin(req: SpinRequest): Promise<SpinResult> {
       if (wheel.tiers.length === 0 || !oddsSumToOneHundred(wheel.tiers)) {
         throw new WheelUnavailableError("This wheel is misconfigured (odds do not total 100%)");
       }
-      if (wheel.tiers.some((t) => t.products.length === 0)) {
+      // Tiers with 0% odds are retired: they stay in the database because past
+      // spins reference them, but they can never be selected and do not block play.
+      const liveTiers = wheel.tiers.filter((t) => t.oddsBps > 0);
+      if (liveTiers.some((t) => t.products.length === 0)) {
         throw new WheelUnavailableError("This wheel is misconfigured (a tier has no products)");
       }
 
@@ -92,7 +95,7 @@ export async function executeSpin(req: SpinRequest): Promise<SpinResult> {
 
       // 4. Lock every awardable product (ordered by id to avoid deadlocks) and
       //    require all of them to be in stock, including the chase prize.
-      const productIds = [...new Set(wheel.tiers.flatMap((t) => t.products.map((p) => p.productId)))].sort();
+      const productIds = [...new Set(liveTiers.flatMap((t) => t.products.map((p) => p.productId)))].sort();
       const stocks = await tx.$queryRaw<{ id: string; stock: number; name: string; isActive: boolean }[]>`
         SELECT "id", "stock", "name", "isActive" FROM "Product"
         WHERE "id" IN (${Prisma.join(productIds)})
