@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" role="img" aria-label="Product photo coming soon">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1a2238"/>
+      <stop offset="1" stop-color="#0b0f19"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" rx="24" fill="url(#g)"/>
+  <rect x="110" y="90" width="180" height="220" rx="14" fill="none" stroke="#253050" stroke-width="6"/>
+  <rect x="130" y="110" width="140" height="90" rx="8" fill="#253050" opacity="0.6"/>
+  <rect x="130" y="215" width="140" height="14" rx="7" fill="#253050"/>
+  <rect x="130" y="240" width="90" height="14" rx="7" fill="#253050"/>
+  <text x="200" y="350" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" fill="#8b93ad">Photo coming soon</text>
+</svg>

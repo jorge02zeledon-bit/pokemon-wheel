@@ -1,0 +1,15 @@
+# Local PostgreSQL for development. Start with `docker compose up -d`.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: honshu
+      POSTGRES_PASSWORD: honshu
+      POSTGRES_DB: honshuwheel
+    ports:
+      - "5432:5432"
+    volumes:
+      - honshuwheel_pgdata:/var/lib/postgresql/data
+volumes:
+  honshuwheel_pgdata:

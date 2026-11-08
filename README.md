@@ -1,0 +1,83 @@
+# HonshuWheel
+
+Spin prize wheels to win sealed trading card products. Next.js (App Router) +
+TypeScript + Tailwind, PostgreSQL via Prisma, Auth.js email/password.
+
+> **Status: Phase 1 of 7 (setup, schema, seed, auth).** Not production ready.
+> The site runs in **demo mode** (`REAL_MONEY_ENABLED=false`) and must stay
+> that way until the pre-launch checklist (added in Phase 7) is complete and an
+> attorney has reviewed the legal pages.
+
+## Quick start
+
+```bash
+cp .env.example .env            # then edit AUTH_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD
+docker compose up -d            # local PostgreSQL 16
+npm install
+npm run setup                   # prisma migrate deploy + seed (5 wheels, products, admin)
+npm run dev                     # http://localhost:3000
+```
+
+Log in with `ADMIN_EMAIL` / `ADMIN_PASSWORD` to reach `/admin`.
+
+## Scripts
+
+| Script | Purpose |
+| --- | --- |
+| `npm run dev` / `build` / `start` | Next.js |
+| `npm run setup` | Apply migrations and seed |
+| `npm run db:migrate` | Create/apply a migration in development |
+| `npm run db:seed` | Re-run the seed (idempotent; never rewrites a wheel that has spins) |
+| `npm run db:reset` | Drop and recreate the dev database |
+| `npm test` | Vitest. Needs a test database: see below |
+| `npm run typecheck` / `lint` | Type and lint checks |
+
+### Tests
+
+Tests run against a separate database defined in `.env.test`
+(default `honshuwheel_test`). Create it once and apply migrations:
+
+```bash
+createdb -h localhost -U honshu honshuwheel_test
+DATABASE_URL="postgresql://honshu:honshu@localhost:5432/honshuwheel_test?schema=public" npx prisma migrate deploy
+npm test
+```
+
+## Launch mode
+
+`REAL_MONEY_ENABLED` (env) is the single switch between demo mode and real
+money. While `false`:
+
+- new accounts receive free demo credits (amount editable in admin settings);
+- spins, the vault and buyback work fully using demo credits;
+- deposits, withdrawals and shipping are refused **on the server** by
+  `requireRealMoney()` in `src/server/guards.ts`, and the UI shows a banner.
+
+## Architecture notes
+
+- **Money** is integer cents everywhere. **Odds** are integer basis points
+  (10,000 = 100%) and every wheel's tiers must sum to exactly 10,000.
+- **Spin** and **LedgerEntry** tables are append-only: a PostgreSQL trigger in
+  the init migration rejects `UPDATE` and `DELETE`.
+- **Provably fair:** per spin, `HMAC-SHA256(serverSeed, clientSeed:nonce)`.
+  The server seed's SHA-256 hash is shown before the spin; the seed is revealed
+  after it. See `src/server/engine/fair.ts`.
+- **Products are global** and shared between wheels with one stock count.
+- **Providers** (payments, identity, geolocation, storage, mail) sit behind
+  interfaces in `src/server/providers/` (added from Phase 4 onward) with safe
+  local defaults. No payment processor is wired.
+- **Runtime settings** (RTP range, buyback %, vault window, fees, demo credit
+  amounts) live in the `Setting` table with typed defaults in
+  `src/server/settings.ts`.
+
+## Deployment target
+
+Planned: Vercel (app) + Neon (PostgreSQL) + Cloudflare R2 (product photos) +
+Vercel Cron for the vault-expiry job. Confirm each provider's acceptable-use
+policy for chance-based products during legal review.
+
+## Legal
+
+This project is not affiliated with, endorsed by, or sponsored by The Pokémon
+Company, Nintendo, Creatures, or Game Freak. Legal pages are drafts and must be
+reviewed by an attorney before launch.

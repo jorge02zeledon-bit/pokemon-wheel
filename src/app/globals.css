@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   HonshuWheel design tokens: dark theme with bright accents. Original palette;
+   nothing here imitates any trading-card brand.
+--------------------------------------------------------------------------- */
+@theme {
+  --color-bg: #0b0f19;
+  --color-surface: #121829;
+  --color-surface-2: #1a2238;
+  --color-border: #253050;
+  --color-text: #e6e9f2;
+  --color-muted: #8b93ad;
+
+  --color-accent: #22d3ee;      /* cyan */
+  --color-accent-2: #f472b6;    /* magenta */
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-danger: #f87171;
+
+  /* Tier colours */
+  --color-tier-common: #64748b;
+  --color-tier-uncommon: #22d3ee;
+  --color-tier-rare: #a78bfa;
+  --color-tier-chase: #fbbf24;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --radius-card: 1rem;
+  --shadow-glow: 0 0 40px -10px var(--color-accent);
+}
+
+html {
+  color-scheme: dark;
+  min-height: 100%;
+  background-color: var(--color-bg);
+  background-image: radial-gradient(1200px 600px at 50% -10%, #182044 0%, transparent 60%);
+  background-repeat: no-repeat;
+}
+
+body {
+  color: var(--color-text);
+  font-family: var(--font-sans);
+}
+
+/* Focus ring for keyboard users */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-border bg-surface/90 shadow-lg shadow-black/30 backdrop-blur;
+  }
+  /* Button base shared by every variant (Tailwind 4 cannot @apply a sibling component class). */
+  .btn, .btn-primary, .btn-secondary, .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition
+      disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply bg-accent text-bg hover:brightness-110 active:brightness-95;
+  }
+  .btn-secondary {
+    @apply border border-border bg-surface-2 text-text hover:border-accent/60;
+  }
+  .btn-ghost {
+    @apply text-muted hover:text-text;
+  }
+  .input {
+    @apply w-full rounded-xl border border-border bg-bg/60 px-3.5 py-2.5 text-text placeholder:text-muted
+      focus:border-accent focus:outline-none;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-muted;
+  }
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+}
