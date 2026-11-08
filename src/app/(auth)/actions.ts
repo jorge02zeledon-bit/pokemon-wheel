@@ -57,6 +57,8 @@ export async function signup(_prev: AuthFormState, formData: FormData): Promise<
         },
       });
       if (isDemoMode() && settings.demoStartingCreditsCents > 0) {
+        // The welcome grant does not start the refill cooldown, so a new player
+        // who spends it all can refill right away.
         await applyLedgerEntry(tx, {
           userId: user.id,
           type: "DEMO_GRANT",
@@ -64,7 +66,6 @@ export async function signup(_prev: AuthFormState, formData: FormData): Promise<
           isDemo: true,
           description: "Welcome demo credits",
         });
-        await tx.user.update({ where: { id: user.id }, data: { lastDemoRefillAt: new Date() } });
       }
     });
   } catch (e) {

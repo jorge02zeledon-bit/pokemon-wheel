@@ -1,5 +1,5 @@
 import { createHash, createHmac, randomBytes } from "node:crypto";
-import { BPS_SCALE } from "@/lib/money";
+import { fairMessage, rollsFromHash, type FairRolls } from "@/lib/fair-core";
 
 /**
  * Provably fair primitives.
@@ -39,23 +39,10 @@ export function hashServerSeed(serverSeed: string): string {
 }
 
 export function computeResultHash(serverSeed: string, clientSeed: string, nonce: number): string {
-  return createHmac("sha256", serverSeed).update(`${clientSeed}:${nonce}`, "utf8").digest("hex");
+  return createHmac("sha256", serverSeed).update(fairMessage(clientSeed, nonce), "utf8").digest("hex");
 }
 
-export interface FairRolls {
-  resultHash: string;
-  /** Integer in [0, 10000) used to select the tier against cumulative odds. */
-  tierRoll: number;
-  /** Non-negative 24-bit integer used to pick a product inside the tier. */
-  productRoll: number;
-}
-
-/** Derive the two rolls from a result hash. Pure function. */
-export function rollsFromHash(resultHash: string): FairRolls {
-  const a = parseInt(resultHash.slice(0, 8), 16); // 32 bits
-  const b = parseInt(resultHash.slice(8, 14), 16); // next 24 bits
-  return { resultHash, tierRoll: a % BPS_SCALE, productRoll: b };
-}
+export { rollsFromHash, fairMessage, type FairRolls } from "@/lib/fair-core";
 
 export function computeRolls(serverSeed: string, clientSeed: string, nonce: number): FairRolls {
   return rollsFromHash(computeResultHash(serverSeed, clientSeed, nonce));

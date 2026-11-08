@@ -59,3 +59,22 @@ export async function assertSpinEligible(tx: Tx, user: User, ctx: EligibilityCon
     );
   }
 }
+
+/**
+ * Non-throwing preview used by pages to explain up front why the spin button
+ * is disabled. The spin itself always re-runs `assertSpinEligible` inside the
+ * transaction; this is only for messaging.
+ */
+export async function previewSpinEligibility(
+  db: Tx,
+  user: User,
+  ctx: EligibilityContext = {},
+): Promise<{ ok: true } | { ok: false; reason: NotEligibleError["reason"]; message: string; until: Date | null }> {
+  try {
+    await assertSpinEligible(db, user, ctx);
+    return { ok: true };
+  } catch (e) {
+    if (e instanceof NotEligibleError) return { ok: false, reason: e.reason, message: e.message, until: e.until ?? null };
+    throw e;
+  }
+}

@@ -3,7 +3,7 @@
 Spin prize wheels to win sealed trading card products. Next.js (App Router) +
 TypeScript + Tailwind, PostgreSQL via Prisma, Auth.js email/password.
 
-> **Status: Phase 2 of 7 (setup, schema, seed, auth, spin engine).** Not production ready.
+> **Status: Phase 3 of 7 (setup, schema, seed, auth, spin engine, wheel UI).** Not production ready.
 > The site runs in **demo mode** (`REAL_MONEY_ENABLED=false`) and must stay
 > that way until the pre-launch checklist (added in Phase 7) is complete and an
 > attorney has reviewed the legal pages.
@@ -80,7 +80,22 @@ money. While `false`:
   amounts) live in the `Setting` table with typed defaults in
   `src/server/settings.ts`.
 
-## API (Phase 2)
+## Wheel UI (Phase 3)
+
+- `src/components/wheel/SpinWheel.tsx` draws the wheel on a canvas. Slice arcs
+  are exactly proportional to the odds (`src/lib/wheel-layout.ts`, unit
+  tested); large tiers are split into interleaved slices, the chase tier is a
+  glowing sliver. The wheel spins while the server is asked for a result, then
+  eases to a stop on the server-chosen tier. It never decides anything.
+- Win reveal modal with confetti for rare and chase tiers, a polling
+  recent-wins feed with masked names, and a per-user "next spin commitment"
+  panel with client seed editing.
+- `/fair` explains the algorithm and verifies any spin in the browser with Web
+  Crypto, with a server cross-check. `?spin=<id>` pre-fills a spin you own.
+- `/wallet` shows balance, history and the demo refill (available when the
+  demo balance is below the refill amount and the cooldown has elapsed).
+
+## API (Phases 2-3)
 
 | Route | Auth | Purpose |
 | --- | --- | --- |
@@ -89,6 +104,8 @@ money. While `false`:
 | `GET /api/fair/state` | user | Next server seed hash, client seed, next nonce |
 | `POST /api/fair/client-seed` `{ clientSeed }` | user | Change client seed for future spins |
 | `POST /api/fair/verify` | public | Stateless verifier: recompute any spin from its inputs |
+| `GET /api/wheels/:slug/recent-wins` | public | Latest wins on a wheel, names masked |
+| `GET` / `POST /api/demo/refill` | user | Demo refill status / grant (demo mode only) |
 
 Error codes: `UNAUTHORIZED` 401, `VALIDATION` 400, `INSUFFICIENT_FUNDS` 402,
 `NOT_ELIGIBLE` 403 (with `reason`), `DEMO_MODE` 403, `OUT_OF_STOCK` /

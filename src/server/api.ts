@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 import { ForbiddenError, RealMoneyDisabledError, UnauthorizedError } from "./guards";
 import { InsufficientFundsError } from "./wallet/ledger";
 import { NotEligibleError, OutOfStockError, ValidationError, WheelUnavailableError } from "./engine/errors";
+import { RefillNotAvailableError } from "./wallet/demo";
 
 /**
  * Maps domain errors to JSON API responses. Unknown errors are logged and
@@ -24,6 +25,9 @@ export function apiError(e: unknown): NextResponse {
   }
   if (e instanceof OutOfStockError) {
     return NextResponse.json({ error: "OUT_OF_STOCK", message: e.message, products: e.productNames }, { status: 409 });
+  }
+  if (e instanceof RefillNotAvailableError) {
+    return NextResponse.json({ error: "REFILL_NOT_AVAILABLE", message: e.message, availableAt: e.availableAt }, { status: 429 });
   }
   if (e instanceof WheelUnavailableError) return NextResponse.json({ error: "WHEEL_UNAVAILABLE", message: e.message }, { status: 409 });
   console.error("Unhandled API error", e);
