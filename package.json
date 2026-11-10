@@ -15,7 +15,8 @@
     "db:seed": "prisma db seed",
     "db:reset": "prisma migrate reset --force",
     "db:studio": "prisma studio",
-    "setup": "prisma migrate deploy && prisma db seed"
+    "setup": "prisma migrate deploy && prisma db seed",
+    "vercel-build": "prisma generate && prisma migrate deploy && node scripts/seed-if-requested.mjs && next build"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1164.0",

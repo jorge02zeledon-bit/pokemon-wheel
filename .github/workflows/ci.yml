@@ -23,6 +23,7 @@ jobs:
           --health-retries 10
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/honshuwheel_test?schema=public
+      DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/honshuwheel_test?schema=public
       AUTH_SECRET: ci-secret
       REAL_MONEY_ENABLED: "false"
     steps:
@@ -36,7 +37,7 @@ jobs:
       - run: npx prisma migrate deploy
       - run: npm run lint
       - run: npx next typegen && npx tsc --noEmit
-      - run: printf 'DATABASE_URL="%s"\nAUTH_SECRET="ci-secret"\nREAL_MONEY_ENABLED="false"\n' "$DATABASE_URL" > .env.test
+      - run: printf 'DATABASE_URL="%s"\nDIRECT_DATABASE_URL="%s"\nAUTH_SECRET="ci-secret"\nREAL_MONEY_ENABLED="false"\n' "$DATABASE_URL" "$DATABASE_URL" > .env.test
       - run: npm test
       - run: npm run build
         env:

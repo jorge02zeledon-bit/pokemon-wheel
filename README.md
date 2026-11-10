@@ -62,7 +62,9 @@ admin credentials and open `/admin`.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `DATABASE_URL` | compose Postgres | Prisma connection string |
+| `DATABASE_URL` | compose Postgres | Prisma connection string used by the app (Neon: pooled host + `pgbouncer=true&connection_limit=1`) |
+| `DIRECT_DATABASE_URL` | same as above | Direct (non-pooled) connection for migrations and the seed |
+| `RUN_SEED` | — | `true` on the **first** Vercel build only: `vercel-build` then seeds the database once |
 | `AUTH_SECRET` | — | Auth.js JWT secret (required) |
 | `AUTH_URL` | `http://localhost:3000` | Public site URL (used in emails and callbacks) |
 | `AUTH_TRUST_HOST` | `true` | Required behind proxies/Vercel |
@@ -237,13 +239,14 @@ signatures in `parseWebhook`, add a `case` to the factory, set the env var.
 
 ## 7. Deploying (Vercel + Neon + Cloudflare R2)
 
-1. **Neon:** create a Postgres project. For the app on Vercel use the
-   **pooled** connection string with
-   `?sslmode=require&pgbouncer=true&connection_limit=1` appended as
-   `DATABASE_URL`. For migrations and the seed use the **direct** (non-pooled)
-   string: from your machine run `DATABASE_URL="<direct url>" npx prisma
-   migrate deploy` and `DATABASE_URL="<direct url>" ADMIN_EMAIL=… ADMIN_PASSWORD=…
-   npx prisma db seed` once.
+1. **Neon:** create a Postgres project (region: match your Vercel region;
+   `us-east-1` pairs with Vercel's default `iad1`). Set `DATABASE_URL` to the
+   **pooled** connection string with `?sslmode=require&pgbouncer=true&connection_limit=1`
+   and `DIRECT_DATABASE_URL` to the **direct** string with `?sslmode=require`.
+   Migrations run automatically during the Vercel build (`npm run vercel-build`
+   runs `prisma migrate deploy`). For the first deploy also set `RUN_SEED=true`
+   plus `ADMIN_EMAIL` / `ADMIN_PASSWORD`; the build seeds the database once.
+   Remove `RUN_SEED` afterwards so later builds never reset product values.
 2. **Cloudflare R2:** create a bucket with public access (or a custom domain);
    create an API token; set `STORAGE_PROVIDER=s3`,
    `S3_ENDPOINT=https://<account>.r2.cloudflarestorage.com`, `S3_BUCKET`,
@@ -257,9 +260,9 @@ signatures in `parseWebhook`, add a `case` to the factory, set the env var.
    `AUTH_URL=https://your-domain`, `AUTH_TRUST_HOST=true`,
    `JOBS_SECRET`, and `CRON_SECRET` equal to `JOBS_SECRET` (Vercel sends it as
    the bearer token for the daily cron in `vercel.json`). Keep
-   `REAL_MONEY_ENABLED=false`. Build command is the default (`npm run build`
-   runs `prisma generate`). Set the production branch to the branch you want
-   deployed (Settings → Git) if it is not `main`.
+   `REAL_MONEY_ENABLED=false`. Build command: `npm run vercel-build`
+   (generate → migrate → optional seed → build). Set the production branch to
+   the branch you want deployed (Settings → Git) if it is not `main`.
 6. Point `/api/health` at your uptime monitor.
 7. Confirm each provider's acceptable-use policy permits chance-based
    products before launch.
