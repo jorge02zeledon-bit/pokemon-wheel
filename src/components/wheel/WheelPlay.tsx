@@ -12,6 +12,7 @@ import { RecentWins } from "./RecentWins";
 import { FairPanel, type FairState } from "./FairPanel";
 import { Alert } from "@/components/ui/Alert";
 import { SessionSpend } from "./SessionSpend";
+import { StatePicker } from "@/components/account/StatePicker";
 
 export interface WheelPlayProps {
   wheel: { slug: string; name: string; spinPriceCents: number; accentColor: string; tiers: WheelTier[] };
@@ -20,7 +21,7 @@ export interface WheelPlayProps {
   viewer: null | {
     balanceCents: number;
     fair: FairState;
-    blocker: { message: string } | null;
+    blocker: { reason: string; message: string } | null;
   };
   recentWins: RecentWin[];
 }
@@ -139,7 +140,15 @@ export function WheelPlay({ wheel, stocked, isDemo, viewer, recentWins }: WheelP
                 )}
               </p>
               <SessionSpend refreshKey={spinCount} />
-              {disabledReason && <Alert kind="warning">{disabledReason}</Alert>}
+              {disabledReason && (
+                <Alert kind="warning">
+                  <div className="space-y-3">
+                    <p>{disabledReason}</p>
+                    {viewer.blocker?.reason === "NO_STATE" && <StatePicker current={null} compact />}
+                    {viewer.blocker?.reason === "AGE_NOT_CONFIRMED" && <Link href="/account#profile" className="btn-primary px-3 py-1.5 text-xs">Go to my account</Link>}
+                  </div>
+                </Alert>
+              )}
               {error && <Alert kind="danger">{error}</Alert>}
             </>
           ) : (

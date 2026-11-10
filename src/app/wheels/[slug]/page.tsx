@@ -39,7 +39,7 @@ export default async function WheelPage({ params }: PageProps<"/wheels/[slug]">)
       viewer = {
         balanceCents: isDemo ? user.demoBalanceCents : user.realBalanceCents,
         fair,
-        blocker: eligibility.ok ? null : { message: eligibility.message },
+        blocker: eligibility.ok ? null : { reason: eligibility.reason, message: eligibility.message },
       };
     }
   }
